@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kuma-egress
+    app.kubernetes.io/instance: kuma
+    app.kubernetes.io/name: kuma
+  name: kuma-egress
+  namespace: kuma-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuma-egress
+      app.kubernetes.io/instance: kuma
+      app.kubernetes.io/name: kuma
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      annotations:
+        kuma.io/egress: enabled
+      labels:
+        app: kuma-egress
+        app.kubernetes.io/instance: kuma
+        app.kubernetes.io/name: kuma
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - kuma
+                    - key: app.kubernetes.io/instance
+                      operator: In
+                      values:
+                        - kuma
+                    - key: app
+                      operator: In
+                      values:
+                        - kuma-egress
+                topologyKey: kubernetes.io/hostname
+              weight: 100
+      automountServiceAccountToken: true
+      containers:
+        - args:
+            - run
+            - --log-level=info
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: https://kuma-control-plane.kuma-system:5678
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: egress
+          image: docker.io/kumahq/kuma-dp:2.10.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 12
+            httpGet:
+              path: /ready
+              port: 9901
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          name: egress
+          ports:
+            - containerPort: 10002
+              protocol: TCP
+            - containerPort: 9901
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 12
+            httpGet:
+              path: /ready
+              port: 9901
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /var/run/secrets/kuma.io/cp-ca
+              name: control-plane-ca
+              readOnly: true
+            - mountPath: /tmp
+              name: tmp
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
+      serviceAccountName: kuma-egress
+      volumes:
+        - name: control-plane-ca
+          secret:
+            items:
+              - key: ca.crt
+                path: ca.crt
+            secretName: kuma-tls-cert
+        - emptyDir: {}
+          name: tmp

@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: app
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/name: controller
+  name: kong-controller
+  namespace: kong
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: app
+      app.kubernetes.io/instance: kong
+      app.kubernetes.io/name: controller
+  template:
+    metadata:
+      annotations:
+        kuma.io/gateway: enabled
+        kuma.io/service-account-token-volume: kong-controller-token
+        traffic.kuma.io/exclude-outbound-ports: "8444"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "8444"
+        traffic.sidecar.istio.io/includeInboundPorts: ""
+      labels:
+        app: kong-controller
+        app.kubernetes.io/component: app
+        app.kubernetes.io/instance: kong
+        app.kubernetes.io/name: controller
+        version: "3.9"
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: CONTROLLER_ADMISSION_WEBHOOK_LISTEN
+              value: 0.0.0.0:8080
+            - name: CONTROLLER_ELECTION_ID
+              value: kong-ingress-controller-leader-kong
+            - name: CONTROLLER_INGRESS_CLASS
+              value: kong
+            - name: CONTROLLER_KONG_ADMIN_SVC
+              value: kong/kong-gateway-admin
+            - name: CONTROLLER_KONG_ADMIN_TLS_SKIP_VERIFY
+              value: "true"
+            - name: CONTROLLER_PUBLISH_SERVICE
+              value: kong/kong-gateway-proxy
+          image: kong/kubernetes-ingress-controller:3.4
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: ingress-controller
+          ports:
+            - containerPort: 8080
+              name: webhook
+              protocol: TCP
+            - containerPort: 10255
+              name: cmetrics
+              protocol: TCP
+            - containerPort: 10254
+              name: cstatus
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /readyz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - mountPath: /admission-webhook
+              name: webhook-cert
+              readOnly: true
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kong-controller-token
+              readOnly: true
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: kong-controller
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - emptyDir:
+            sizeLimit: 256Mi
+          name: kong-controller-prefix-dir
+        - emptyDir:
+            sizeLimit: 1Gi
+          name: kong-controller-tmp
+        - name: kong-controller-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+        - name: webhook-cert
+          secret:
+            secretName: kong-controller-validation-webhook-keypair

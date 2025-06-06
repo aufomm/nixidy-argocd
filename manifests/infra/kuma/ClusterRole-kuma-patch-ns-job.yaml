@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+  labels:
+    app.kubernetes.io/instance: kuma
+    app.kubernetes.io/name: kuma
+  name: kuma-patch-ns-job
+  namespace: kuma-system
+rules:
+  - apiGroups:
+      - ""
+    resourceNames:
+      - kuma-system
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - patch

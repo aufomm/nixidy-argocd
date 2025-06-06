@@ -1,0 +1,17 @@
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: demo
+spec:
+  mtls:
+    backends:
+      - conf:
+          caCert:
+            RSAbits: 2048
+            expiration: 10y
+        dpCert:
+          rotation:
+            expiration: 7d
+        name: ca-1
+        type: builtin
+    enabledBackend: ca-1

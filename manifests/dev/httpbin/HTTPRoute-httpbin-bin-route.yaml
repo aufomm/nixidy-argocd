@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    konghq.com/strip-path: "true"
+  name: httpbin-bin-route
+  namespace: httpbin
+spec:
+  hostnames:
+    - proxy.li.k8s
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: kong
+      namespace: kong
+  rules:
+    - backendRefs:
+        - kind: Service
+          name: httpbin-svc
+          port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /bin

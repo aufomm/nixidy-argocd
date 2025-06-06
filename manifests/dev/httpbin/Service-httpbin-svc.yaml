@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    ingress.kubernetes.io/service-upstream: "true"
+  name: httpbin-svc
+  namespace: httpbin
+spec:
+  ports:
+    - appProtocol: http
+      name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: httpbin

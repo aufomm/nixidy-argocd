@@ -1,0 +1,20 @@
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  labels:
+    kuma.io/mesh: demo
+    kuma.io/origin: zone
+  name: allow-kong-to-httpbin
+  namespace: kuma-system
+spec:
+  from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: kong-gateway-admin_kong_svc_8001
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/service: httpbin-svc_httpbin_svc_80

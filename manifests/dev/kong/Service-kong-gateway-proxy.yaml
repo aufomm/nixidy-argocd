@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.18.150
+  labels:
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/name: gateway
+    enable-metrics: "true"
+  name: kong-gateway-proxy
+  namespace: kong
+spec:
+  ports:
+    - name: kong-proxy
+      port: 80
+      protocol: TCP
+      targetPort: 8000
+    - name: kong-proxy-tls
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    app.kubernetes.io/component: app
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/name: gateway
+  type: LoadBalancer

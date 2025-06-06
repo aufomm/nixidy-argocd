@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: pre-delete
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+    helm.sh/hook-weight: "5"
+  labels:
+    app.kubernetes.io/instance: kuma
+    app.kubernetes.io/name: kuma
+  name: kuma-delete-webhook
+  namespace: kuma-system
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: kuma
+        app.kubernetes.io/name: kuma
+      name: kuma-delete-webhook
+    spec:
+      containers:
+        - command:
+            - kubectl
+            - delete
+            - ValidatingWebhookConfiguration
+            - --ignore-not-found
+            - kuma-validating-webhook-configuration
+          image: docker.io/bitnami/kubectl:1.32.2
+          name: pre-delete-job
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 65534
+      nodeSelector:
+        kubernetes.io/os: linux
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: kuma-pre-delete-job

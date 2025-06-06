@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    helm.sh/hook: pre-delete
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+  labels:
+    app.kubernetes.io/instance: kuma
+    app.kubernetes.io/name: kuma
+  name: kuma-pre-delete-job
+rules:
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resourceNames:
+      - kuma-validating-webhook-configuration
+    resources:
+      - validatingwebhookconfigurations
+    verbs:
+      - delete

@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: lab-k8s-ca-issuer
+  name: kong
+  namespace: kong
+spec:
+  gatewayClassName: kong
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: All
+      name: proxy
+      port: 80
+      protocol: HTTP
+    - allowedRoutes:
+        namespaces:
+          from: All
+      hostname: proxy.li.k8s
+      name: proxy-tls
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+          - name: proxy-cert
+        mode: Terminate

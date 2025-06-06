@@ -1,0 +1,32 @@
+apiVersion: v1
+data:
+  install_crds.sh: |
+    #!/usr/bin/env sh
+    set -e
+
+    if [ -s /kuma/crds/crds.yaml ]; then
+      echo "/kuma/crds/crds.yaml found and is not empty, adding crds"
+      kubectl apply -f /kuma/crds/crds.yaml
+    else
+      echo "/kuma/crds/crds.yaml not found or empty, it looks like there is no crds to install"
+    fi
+  save_crds.sh: |
+    set -e
+
+    crds="$(kumactl install crds --no-config)"
+
+    if [ -n "${crds}" ]; then
+      echo "found crds - saving to /kuma/crds/crds.yaml"
+      echo "${crds}" > /kuma/crds/crds.yaml
+    fi
+kind: ConfigMap
+metadata:
+  annotations:
+    helm.sh/hook: pre-upgrade,pre-install
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-1"
+  labels:
+    app.kubernetes.io/instance: kuma
+    app.kubernetes.io/name: kuma
+  name: kuma-install-crds-scripts
+  namespace: kuma-system

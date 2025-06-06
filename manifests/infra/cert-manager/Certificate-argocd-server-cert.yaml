@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-server-cert
+  namespace: argocd
+spec:
+  dnsNames:
+    - argo.li.k8s
+  issuerRef:
+    kind: ClusterIssuer
+    name: lab-k8s-ca-issuer
+  secretName: argocd-server-tls
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: k8s-gw-api-crds
+  namespace: argocd
+spec:
+  destination:
+    namespace: k8s-gw-api-crds
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: ./manifests/infra/k8s-gw-api-crds
+    repoURL: git@github.com:aufomm/nixidy-argocd.git
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

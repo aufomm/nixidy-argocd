@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/name: controller
+  name: kong-controller-metrics
+  namespace: kong
+spec:
+  ports:
+    - name: cmetrics
+      port: 10255
+      protocol: TCP
+      targetPort: cmetrics
+    - name: status
+      port: 10254
+      protocol: TCP
+      targetPort: cstatus
+  selector:
+    app.kubernetes.io/component: app
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/version: "3.9"
+    helm.sh/chart: controller-2.48.0
