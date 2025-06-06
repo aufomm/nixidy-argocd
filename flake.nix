@@ -212,25 +212,6 @@
                       exit 1
                   fi
 
-                  ${pkgs.toybox}/bin/echo "Waiting for ArgoCD TLS certificate to be issued..."
-                  max_retries=5
-                  retry_delay=10
-
-                  for ((i=1; i<=max_retries; i++)); do
-                      if ${pkgs.kubectl}/bin/kubectl get secret argocd-server-tls -n argocd &>/dev/null; then
-                          ${pkgs.toybox}/bin/echo "Certificate issued successfully!"
-                          break
-                      else
-                          ${pkgs.toybox}/bin/echo "Attempt $i: Certificate not ready yet. Retrying in $retry_delay seconds..."
-                          sleep $retry_delay
-                      fi
-                  done
-
-                  if (( i > max_retries )); then
-                      ${pkgs.toybox}/bin/echo "Certificate was not issued after $((max_retries * retry_delay)) seconds."
-                      exit 1
-                  fi
-
                   ${pkgs.toybox}/bin/echo "Installing ArgoCD on cluster"
 
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/argocd
