@@ -146,12 +146,17 @@
                   set -e
                   ${pkgs.toybox}/bin/echo "Installing sops-secrets-operator on cluster"
 
-                  # Create namespace and secret using inline YAML
+                  # Create namespace and secret
                   ${pkgs.kubectl}/bin/kubectl apply -f - <<EOF
                   apiVersion: v1
                   kind: Namespace
                   metadata:
                     name: sops-operator
+                  ---
+                  apiVersion: v1
+                  kind: Namespace
+                  metadata:
+                    name: argocd
                   ---
                   apiVersion: v1
                   kind: Secret
@@ -168,30 +173,42 @@
 
                   ${pkgs.toybox}/bin/echo "Installing Cert Manager"
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/k8s-gw-api-crds
-                  ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/cert-manager
 
-                  # Wait for the ClusterIssuer to be ready
-                  max_retries=10
-                  retry_delay=15
+                  cm_max_retries=5
+                  cm_retry_delay=10
+                  issuer_max_retries=3
+                  issuer_retry_delay=5
 
-                  for ((i=1; i<=max_retries; i++)); do
-                      ${pkgs.toybox}/bin/echo "Attempt $i: Checking if ClusterIssuer 'lab-k8s-ca-issuer' is ready..."
-                      if ${pkgs.kubectl}/bin/kubectl get clusterissuer lab-k8s-ca-issuer -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null | grep -q "True"; then
-                          ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' is ready!"
-                          break
+                  for ((i=1; i<=cm_max_retries; i++)); do
+                      ${pkgs.toybox}/bin/echo "Attempt $i: Applying cert-manager manifests..."
+                      if ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/cert-manager; then
+                          ${pkgs.toybox}/bin/echo "Cert-manager applied successfully. Checking ClusterIssuer 'lab-k8s-ca-issuer' readiness..."
+
+                          for ((j=1; j<=issuer_max_retries; j++)); do
+                              ${pkgs.toybox}/bin/echo "Attempt $j: Checking if ClusterIssuer 'lab-k8s-ca-issuer' is ready..."
+                              if ${pkgs.kubectl}/bin/kubectl get clusterissuer lab-k8s-ca-issuer -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null | grep -q "True"; then
+                                  ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' is ready!"
+                                  break 2 # Break both loops
+                              else
+                                  ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' not ready yet. Retrying in $issuer_retry_delay seconds..."
+                              fi
+                              sleep $issuer_retry_delay
+                          done
+
+                          ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' was not ready after $((issuer_max_retries * issuer_retry_delay)) seconds."
+                          exit 1
                       else
-                          ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' not ready yet. Retrying in $retry_delay seconds..."
+                          ${pkgs.toybox}/bin/echo "Failed to apply cert-manager, retrying in $cm_retry_delay seconds..."
                       fi
-                      sleep $retry_delay
+                      sleep $cm_retry_delay
                   done
 
-                  if (( i > max_retries )); then
-                      ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' was not ready after $((max_retries * retry_delay)) seconds."
+                  if (( i > cm_max_retries )); then
+                      ${pkgs.toybox}/bin/echo "Failed to apply cert-manager after $((cm_max_retries * cm_retry_delay)) seconds."
                       exit 1
                   fi
 
                   ${pkgs.toybox}/bin/echo "Installing ArgoCD on cluster"
-
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/argocd
                   ${pkgs.kubectl}/bin/kubectl rollout status -n argocd deployment argocd-server
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/bootstrap.yaml
