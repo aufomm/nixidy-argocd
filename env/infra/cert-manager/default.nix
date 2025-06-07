@@ -32,24 +32,6 @@
           ca:
             secretName: fomm-ca-key-pair
       '')
-      (''
-        apiVersion: cert-manager.io/v1
-        kind: Certificate
-        metadata:
-          name: argocd-server-cert
-          namespace: argocd
-        spec:
-          secretName: argocd-server-tls
-          issuerRef:
-            name: lab-k8s-ca-issuer
-            kind: ClusterIssuer
-          dnsNames:
-            - argo.li.k8s
-          usages:
-            - digital signature
-            - key encipherment
-            - server auth
-      '')
     ];
   };
 }

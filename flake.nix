@@ -165,50 +165,28 @@
 
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/sops-secrets-operator
                   ${pkgs.kubectl}/bin/kubectl rollout status -n sops-operator deployment sops-sops-secrets-operator
-                  # Create ArgoCD namespace, This is to make sure a tls certificate is ready before deploying argocd
-                  ${pkgs.kubectl}/bin/kubectl apply -f - <<EOF
-                  apiVersion: v1
-                  kind: Namespace
-                  metadata:
-                    name: argocd
-                  ---
-                  apiVersion: v1
-                  kind: Namespace
-                  metadata:
-                    name: cert-manager
-                  EOF
 
                   ${pkgs.toybox}/bin/echo "Installing Cert Manager"
-
                   ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/k8s-gw-api-crds
+                  ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/cert-manager
 
-                  # Retry applying cert-manager until successful and certificate is issued
+                  # Wait for the ClusterIssuer to be ready
                   max_retries=10
                   retry_delay=15
 
                   for ((i=1; i<=max_retries; i++)); do
-                      ${pkgs.toybox}/bin/echo "Attempt $i: Applying cert-manager manifests..."
-                      if ${pkgs.kubectl}/bin/kubectl apply -f manifests/infra/cert-manager; then
-                          ${pkgs.toybox}/bin/echo "Cert-manager applied successfully. Waiting for certificate..."
-                          
-                          # Wait a bit for certificate to be processed
-                          sleep 10
-                          
-                          # Check if certificate is issued
-                          if ${pkgs.kubectl}/bin/kubectl get secret argocd-server-tls -n argocd &>/dev/null; then
-                              ${pkgs.toybox}/bin/echo "Certificate issued successfully!"
-                              break
-                          else
-                              ${pkgs.toybox}/bin/echo "Certificate not ready yet, will retry..."
-                          fi
+                      ${pkgs.toybox}/bin/echo "Attempt $i: Checking if ClusterIssuer 'lab-k8s-ca-issuer' is ready..."
+                      if ${pkgs.kubectl}/bin/kubectl get clusterissuer lab-k8s-ca-issuer -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null | grep -q "True"; then
+                          ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' is ready!"
+                          break
                       else
-                          ${pkgs.toybox}/bin/echo "Failed to apply cert-manager, retrying in $retry_delay seconds..."
+                          ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' not ready yet. Retrying in $retry_delay seconds..."
                       fi
                       sleep $retry_delay
                   done
 
                   if (( i > max_retries )); then
-                      ${pkgs.toybox}/bin/echo "Failed to apply cert-manager and get certificate after $((max_retries * retry_delay)) seconds."
+                      ${pkgs.toybox}/bin/echo "ClusterIssuer 'lab-k8s-ca-issuer' was not ready after $((max_retries * retry_delay)) seconds."
                       exit 1
                   fi
 

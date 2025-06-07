@@ -138,4 +138,4 @@ spec:
                       path: namespace
         - name: webhook-cert
           secret:
-            secretName: kong-controller-validation-webhook-keypair
+            secretName: kong-controller-validation-webhook

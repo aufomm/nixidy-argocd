@@ -1,4 +1,5 @@
 { lib, ... }:
+
 {
   applications.kong = {
     namespace = "kong";
@@ -21,7 +22,17 @@
           podLabels."kuma.io/sidecar-injection" = "enabled";
           proxy.annotations."metallb.universe.tf/loadBalancerIPs" = "192.168.18.150";
         };
-        controller.ingressController.installCRDs = false;
+        controller = {
+          ingressController = {
+            installCRDs = false;
+            admissionWebhook = {
+              certificate = {
+                provided = true;
+                secretName = "kong-controller-validation-webhook";
+              };
+            };
+          };
+        };
       };
     };
     resources = {
@@ -171,6 +182,12 @@
           ];
         }
       ];
+
+      "admissionregistration.k8s.io".v1.ValidatingWebhookConfiguration.kong-controller-kong-validations.metadata =
+        {
+          annotations."cert-manager.io/inject-ca-from" = "kong/kong-controller-validation-webhook-cert";
+        };
+
       gatewayClasses.kong = {
         metadata = {
           name = "kong";
@@ -228,5 +245,60 @@
         };
       };
     };
+    yamls = [
+      (''
+        apiVersion: cert-manager.io/v1
+        kind: Certificate
+        metadata:
+          name: kong-ca-certificate
+          namespace: kong
+        spec:
+          commonName: foMM K8S Kong CA
+          isCA: true
+          issuerRef:
+            kind: ClusterIssuer
+            name: lab-k8s-ca-issuer
+          secretName: kong-ca-secret
+          duration: 43800h  # 5 years
+          renewBefore: 1440h  # 2 months
+          usages:
+          - digital signature
+          - key encipherment
+          - cert sign
+      '')
+      (''
+        apiVersion: cert-manager.io/v1
+        kind: Issuer
+        metadata:
+          name: kong-ca-issuer
+          namespace: kong
+        spec:
+          ca:
+            secretName: kong-ca-secret
+      '')
+      (''
+        apiVersion: cert-manager.io/v1
+        kind: Certificate
+        metadata:
+          name: kong-controller-validation-webhook-cert
+          namespace: kong
+        spec:
+          commonName: kong-controller-validation-webhook.kong.svc
+          dnsNames:
+          - kong-controller-validation-webhook.kong.svc.cluster.local
+          - kong-controller-validation-webhook.kong.svc
+          - kong-controller-validation-webhook
+          issuerRef:
+            kind: Issuer
+            name: kong-ca-issuer
+          secretName: kong-controller-validation-webhook
+          duration: 4380h
+          renewBefore: 720h
+          usages:
+          - digital signature
+          - key encipherment
+          - server auth
+      '')
+    ];
   };
 }
