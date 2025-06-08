@@ -24,7 +24,6 @@
         };
         controller = {
           ingressController = {
-            installCRDs = false;
             admissionWebhook = {
               certificate = {
                 provided = true;
@@ -34,155 +33,12 @@
           };
         };
       };
+      extraOpts = [
+        "--api-versions"
+        "gateway.networking.k8s.io/v1"
+      ];
     };
     resources = {
-      "rbac.authorization.k8s.io".v1.ClusterRole.kong-controller.rules = [
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "gatewayclasses" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "gatewayclasses/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "" ];
-          resources = [ "namespaces" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "gateways" ];
-          verbs = [
-            "get"
-            "list"
-            "update"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "gateways/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "httproutes" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "httproutes/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "referencegrants" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "referencegrants/status" ];
-          verbs = [ "get" ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "tcproutes" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "tcproutes/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "tlsroutes" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "tlsroutes/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "udproutes" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "udproutes/status" ];
-          verbs = [
-            "get"
-            "update"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "grpcroutes" ];
-          verbs = [
-            "get"
-            "list"
-            "watch"
-          ];
-        }
-        {
-          apiGroups = [ "gateway.networking.k8s.io" ];
-          resources = [ "grpcroutes/status" ];
-          verbs = [
-            "get"
-            "patch"
-            "update"
-          ];
-        }
-      ];
-
       "admissionregistration.k8s.io".v1.ValidatingWebhookConfiguration.kong-controller-kong-validations.metadata =
         {
           annotations."cert-manager.io/inject-ca-from" = "kong/kong-controller-validation-webhook-cert";
