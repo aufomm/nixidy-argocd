@@ -38,13 +38,7 @@ in
           };
         };
         hTTPRoutes.httpbin-bin-route = {
-          metadata = {
-            name = "httpbin-bin-route";
-            namespace = "httpbin";
-            annotations = {
-              "konghq.com/strip-path" = "true";
-            };
-          };
+          metadata.annotations."konghq.com/strip-path" = "true";
           spec = {
             hostnames = [ "proxy.li.k8s" ];
             parentRefs = [

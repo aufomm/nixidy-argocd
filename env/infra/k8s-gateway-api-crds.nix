@@ -1,4 +1,3 @@
-{ lib, ... }:
 let
   k8s-crd = builtins.fetchurl {
     url = "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml";
@@ -7,7 +6,6 @@ let
 in
 {
   applications.k8s-gw-api-crds = {
-    annotations."argocd.argoproj.io/sync-wave" = "-1";
     yamls = [
       (builtins.readFile k8s-crd)
     ];

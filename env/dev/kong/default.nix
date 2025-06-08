@@ -4,13 +4,12 @@
   applications.kong = {
     namespace = "kong";
     createNamespace = true;
-    annotations."argocd.argoproj.io/sync-wave" = "2";
     helm.releases.kong = {
       chart = lib.helm.downloadHelmChart {
         repo = "https://charts.konghq.com";
         chart = "ingress";
-        version = " 0.19.0";
-        chartHash = "sha256-GhoK29dTgWxvdWhJdbkjtowy1gUOtpTATf763CbaRTM=";
+        version = " 0.20.0";
+        chartHash = "sha256-it5oEOcZ8AEV6fGrKlmSUwn00l7yD13mIRraWXnHCdA=";
       };
       values = {
         gateway = {
@@ -45,26 +44,13 @@
         };
 
       gatewayClasses.kong = {
-        metadata = {
-          name = "kong";
-          annotations = {
-            "konghq.com/gatewayclass-unmanaged" = "true";
-          };
-        };
-        spec = {
-          controllerName = "konghq.com/kic-gateway-controller";
-        };
+        metadata.annotations."konghq.com/gatewayclass-unmanaged" = "true";
+        spec.controllerName = "konghq.com/kic-gateway-controller";
       };
 
       # Gateway
       gateways.kong = {
-        metadata = {
-          name = "kong";
-          namespace = "kong";
-          annotations = {
-            "cert-manager.io/cluster-issuer" = "lab-k8s-ca-issuer";
-          };
-        };
+        metadata.annotations."cert-manager.io/cluster-issuer" = "lab-k8s-ca-issuer";
         spec = {
           gatewayClassName = "kong";
           listeners = [

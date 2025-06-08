@@ -26,7 +26,7 @@ in
     };
     appOfApps.name = "${env}-apps";
     appOfApps.namespace = "argocd";
-    resourceImports = [
+    applicationImports = [
       ../modules/gateway-api.nix
     ];
   };

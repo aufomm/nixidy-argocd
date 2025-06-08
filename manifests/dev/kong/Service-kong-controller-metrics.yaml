@@ -22,4 +22,4 @@ spec:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: controller
     app.kubernetes.io/version: "3.9"
-    helm.sh/chart: controller-2.48.0
+    helm.sh/chart: controller-2.49.0

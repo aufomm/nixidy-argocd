@@ -6,7 +6,6 @@
   applications.cert-manager = {
     namespace = "cert-manager";
     createNamespace = true;
-    annotations."argocd.argoproj.io/sync-wave" = "1";
     helm.releases.cert-manager = {
       chart = lib.helm.downloadHelmChart {
         repo = "https://charts.jetstack.io/";
