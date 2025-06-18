@@ -85,9 +85,7 @@ spec:
           name: egress
           ports:
             - containerPort: 10002
-              protocol: TCP
             - containerPort: 9901
-              protocol: TCP
           readinessProbe:
             failureThreshold: 12
             httpGet:

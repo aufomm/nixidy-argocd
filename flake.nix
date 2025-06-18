@@ -41,17 +41,6 @@
           );
           libOverlay = self: old: {
             kube = old.kube // {
-              addProtocolToPort =
-                {
-                  port,
-                  name ? null,
-                  protocol ? "TCP",
-                }:
-                {
-                  containerPort = port;
-                  inherit protocol;
-                }
-                // (old.optionalAttrs (name != null) { inherit name; });
               readYamlsFromDir = import ./lib/readYaml.nix { lib = old; };
             };
           };
